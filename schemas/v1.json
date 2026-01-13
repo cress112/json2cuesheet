@@ -1,0 +1,128 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "title", "files"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "version": {
+      "const": 1
+    },
+    "title": {
+      "type": "string"
+    },
+    "genre": {
+      "type": "string"
+    },
+    "info": {
+      "$ref": "#/$defs/Info"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/File"
+      }
+    }
+  },
+  "$defs": {
+    "File": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "tracks", "type"],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "tracks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Track"
+          }
+        },
+        "type": {
+          "type": "string",
+          "enum": ["WAVE"]
+        }
+      }
+    },
+    "Info": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "arranger": {
+          "type": "string"
+        },
+        "composer": {
+          "type": "string"
+        },
+        "lyricist": {
+          "type": "string"
+        },
+        "performer": {
+          "type": "string"
+        }
+      }
+    },
+    "Pregap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["duration", "type"],
+      "properties": {
+        "duration": {
+          "$ref": "#/$defs/Time"
+        },
+        "type": {
+          "enum": ["included", "silent"],
+          "type": "string"
+        }
+      }
+    },
+    "Time": {
+      "type": "array",
+      "maxItems": 3,
+      "minItems": 3,
+      "items": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "exclusiveMaximum": 80
+        },
+        {
+          "type": "integer",
+          "minimum": 0,
+          "exclusiveMaximum": 60
+        },
+        {
+          "type": "integer",
+          "minimum": 0,
+          "exclusiveMaximum": 75
+        }
+      ]
+    },
+    "Track": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title"],
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "info": {
+          "$ref": "#/$defs/Info"
+        },
+        "pregap": {
+          "$ref": "#/$defs/Pregap"
+        },
+        "postgap": {
+          "$ref": "#/$defs/Time"
+        },
+        "start_at": {
+          "$ref": "#/$defs/Time"
+        }
+      }
+    }
+  }
+}
