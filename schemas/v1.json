@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "title", "files"],
+  "required": ["$schema", "version", "title", "files"],
   "properties": {
     "$schema": {
       "type": "string"
