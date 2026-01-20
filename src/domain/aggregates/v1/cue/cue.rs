@@ -39,14 +39,16 @@ impl<I: InfoFormatter, F: FileFormatter> Cue<I, F> {
             lines.extend(info.to_cdtext_strings(false));
         }
         // files
+        let mut current_track_number: usize = 1;
         for file in self.files.iter() {
-            let file_result = match file.to_cdtext_strings() {
+            let file_result = match file.to_cdtext_strings(current_track_number) {
                 Ok(res) => res,
                 Err(res) => {
                     return Err(res);
                 }
             };
-            lines.extend(file_result);
+            lines.extend(file_result.texts);
+            current_track_number += file_result.track_count;
         }
 
         Ok(util::join_strings_with_lf(&lines))
@@ -55,6 +57,7 @@ impl<I: InfoFormatter, F: FileFormatter> Cue<I, F> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::file::FileCdtextResult;
     use super::*;
 
     const TEST_INFO: [&str; 2] = ["info1", "info2"];
@@ -75,9 +78,12 @@ mod tests {
 
     struct MockFile {}
     impl FileFormatter for MockFile {
-        fn to_cdtext_strings(&self) -> Result<Vec<String>, String> {
+        fn to_cdtext_strings(&self, _: usize) -> Result<FileCdtextResult, String> {
             let strings = TEST_FILE.map(|s| String::from(s));
-            return Ok(Vec::from(strings));
+            return Ok(FileCdtextResult {
+                texts: Vec::from(strings),
+                track_count: 1,
+            });
         }
     }
 

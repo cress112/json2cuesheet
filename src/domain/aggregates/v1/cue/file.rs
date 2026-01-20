@@ -2,12 +2,18 @@ use super::file_type::FileType;
 use super::track::{Track, TrackFormatter};
 
 pub trait FileFormatter {
-    fn to_cdtext_strings(&self) -> Result<Vec<String>, String>;
+    fn to_cdtext_strings(&self, initial_number: usize) -> Result<FileCdtextResult, String>;
 }
+
 pub struct File<T: TrackFormatter = Track> {
     path: String,
     tracks: Vec<T>,
     file_type: FileType,
+}
+
+pub struct FileCdtextResult {
+    pub texts: Vec<String>,
+    pub track_count: usize,
 }
 
 impl<T: TrackFormatter> File<T> {
@@ -24,7 +30,7 @@ impl<T: TrackFormatter> File<T> {
 }
 
 impl<T: TrackFormatter> FileFormatter for File<T> {
-    fn to_cdtext_strings(&self) -> Result<Vec<String>, String> {
+    fn to_cdtext_strings(&self, initial_number: usize) -> Result<FileCdtextResult, String> {
         let mut lines: Vec<String> = Vec::new();
 
         // file
@@ -39,8 +45,9 @@ impl<T: TrackFormatter> FileFormatter for File<T> {
         ));
         // * これ以降はインデント
         // file detail
+        let mut track_count = 0;
         for (index, track) in self.tracks.iter().enumerate() {
-            let track_number = index + 1;
+            let track_number = initial_number + index;
             let track_strings = match track.to_cdtext_strings(track_number, true) {
                 Ok(res) => res,
                 Err(res) => {
@@ -48,9 +55,13 @@ impl<T: TrackFormatter> FileFormatter for File<T> {
                 }
             };
             lines.extend(track_strings);
+            track_count += 1;
         }
 
-        Ok(lines)
+        Ok(FileCdtextResult {
+            texts: lines,
+            track_count,
+        })
     }
 }
 
@@ -74,13 +85,13 @@ mod tests {
     }
 
     #[test]
-    fn test_to_cdtext_strings() -> Result<(), Box<dyn std::error::Error>> {
+    fn test_to_cdtext_strings_initial_is_0() -> Result<(), Box<dyn std::error::Error>> {
         let path = String::from("/path/to/file.wav");
         let tracks = vec![MockTrack {}, MockTrack {}];
         let file_type = FileType::Wave;
         let file: File<MockTrack> = File::new(path, tracks, file_type);
 
-        let result = file.to_cdtext_strings()?;
+        let result = file.to_cdtext_strings(1)?;
 
         let expected = vec![
             "FILE \"/path/to/file.wav\" WAVE",
@@ -93,18 +104,36 @@ mod tests {
             "    strings",
             "    are here",
         ];
-        assert_eq!(result, expected);
+        assert_eq!(result.texts, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_to_cdtext_strings_initial_is_not0() -> Result<(), Box<dyn std::error::Error>> {
+        let path = String::from("/path/to/file.wav");
+        let tracks = vec![MockTrack {}, MockTrack {}, MockTrack {}];
+        let file_type = FileType::Wave;
+        let file: File<MockTrack> = File::new(path, tracks, file_type);
+
+        let result = file.to_cdtext_strings(4)?;
+
+        let expected = vec![
+            "FILE \"/path/to/file.wav\" WAVE",
+            "4",
+            "  track",
+            "    strings",
+            "    are here",
+            "5",
+            "  track",
+            "    strings",
+            "    are here",
+            "6",
+            "  track",
+            "    strings",
+            "    are here",
+        ];
+        assert_eq!(result.texts, expected);
+        assert_eq!(result.track_count, 3);
         Ok(())
     }
 }
-
-/*
-FILE "files/converted_Moving Still Life.wav" WAVE
-  TRACK 01 AUDIO
-    TITLE "Moving Still Life"
-    PERFORMER "cero"
-    INDEX 01 00:00:00
-    PREGAP 00:02:00
-
-
-*/
