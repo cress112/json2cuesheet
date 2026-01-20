@@ -116,9 +116,6 @@
         "pregap": {
           "$ref": "#/$defs/Pregap"
         },
-        "postgap": {
-          "$ref": "#/$defs/Time"
-        },
         "start_at": {
           "$ref": "#/$defs/Time"
         }

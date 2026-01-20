@@ -3,40 +3,30 @@ use super::pregap::Pregap;
 use super::pregap_type::PregapType;
 use super::time::{Time, TimeFormatter};
 use crate::share::util;
-use std::ops::Add;
 
 pub trait TrackFormatter {
     fn to_cdtext_strings(&self, number: usize, indent: bool) -> Result<Vec<String>, String>;
 }
 
-pub struct Track<T: TimeFormatter = Time, I: InfoFormatter = Info> {
+pub struct Track<I: InfoFormatter = Info> {
     title: String,
     info: Option<I>,
-    pregap: Pregap<T>,
-    postgap: T,
-    start_at: T,
+    pregap: Pregap,
+    start_at: Time,
 }
 
-impl<T: TimeFormatter, I: InfoFormatter> Track<T, I> {
+impl<I: InfoFormatter> Track<I> {
     const KEY_TRACK: &str = "TRACK";
     const KEY_AUDIO: &str = "AUDIO";
     const KEY_TITLE: &str = "TITLE";
     const KEY_PREGAP: &str = "PREGAP";
-    const KEY_POSTGAP: &str = "POSTGAP";
     const KEY_INDEX: &str = "INDEX";
 
-    pub fn new(
-        title: String,
-        info: Option<I>,
-        pregap: Pregap<T>,
-        postgap: T,
-        start_at: T,
-    ) -> Track<T, I> {
+    pub fn new(title: String, info: Option<I>, pregap: Pregap, start_at: Time) -> Track<I> {
         Track {
             title,
             info,
             pregap,
-            postgap,
             start_at,
         }
     }
@@ -51,9 +41,8 @@ impl<T: TimeFormatter, I: InfoFormatter> Track<T, I> {
     }
 }
 
-impl<T, I> TrackFormatter for Track<T, I>
+impl<I> TrackFormatter for Track<I>
 where
-    T: TimeFormatter + PartialEq + PartialOrd + Add<Output = Result<T, String>> + Copy,
     I: InfoFormatter,
 {
     fn to_cdtext_strings(&self, number: usize, indent: bool) -> Result<Vec<String>, String> {
@@ -77,8 +66,15 @@ where
             }
             None => {}
         }
-        // lines.extend(self.info.to_cdtext_strings(true));
         // pregap
+        let Ok(time_0) = Time::from_vec(&vec![0, 0, 0]) else {
+            return Err(String::from("Time is not buildable"));
+        };
+        if self.pregap.duration == time_0 {
+            let index_01 = format!("{} 01 {}", Self::KEY_INDEX, self.start_at.to_msf_string());
+            lines.push(util::build_indent_string(&index_01));
+            return Ok(Self::build_strings(lines, indent));
+        }
         match self.pregap.r#type {
             PregapType::Silent => {
                 // PREGAP pregap
@@ -106,9 +102,6 @@ where
                 lines.push(util::build_indent_string(&index_01));
             }
         };
-        // postgap
-        let postgap_str = format!("{} {}", Self::KEY_POSTGAP, self.postgap.to_msf_string());
-        lines.push(util::build_indent_string(&postgap_str));
 
         Ok(Self::build_strings(lines, indent))
     }
@@ -141,13 +134,11 @@ mod tests {
             r#type: PregapType::Included,
             duration: Time::from_vec(&vec![0, 2, 15])?,
         };
-        let postgap = Time::from_vec(&vec![1, 2, 3])?;
         let start_at = Time::from_vec(&vec![0, 0, 0])?;
-        let test_track: Track<Time, MockInfo> = Track {
+        let test_track: Track<MockInfo> = Track {
             title,
             info,
             pregap,
-            postgap,
             start_at,
         };
 
@@ -160,7 +151,6 @@ mod tests {
             "  info2",
             "  INDEX 00 00:00:00",
             "  INDEX 01 00:02:15",
-            "  POSTGAP 01:02:03",
         ];
         assert_eq!(result, expected);
         Ok(())
@@ -174,13 +164,11 @@ mod tests {
             r#type: PregapType::Silent,
             duration: Time::from_vec(&vec![0, 3, 49])?,
         };
-        let postgap = Time::from_vec(&vec![0, 0, 0])?;
         let start_at = Time::from_vec(&vec![0, 0, 0])?;
-        let test_track: Track<Time, MockInfo> = Track {
+        let test_track: Track<MockInfo> = Track {
             title,
             info,
             pregap,
-            postgap,
             start_at,
         };
 
@@ -193,7 +181,6 @@ mod tests {
             "    info2",
             "    PREGAP 00:03:49",
             "    INDEX 01 00:00:00",
-            "    POSTGAP 00:00:00",
         ];
         assert_eq!(result, expected);
         Ok(())

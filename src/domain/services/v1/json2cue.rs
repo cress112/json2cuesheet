@@ -141,24 +141,6 @@ impl Json2CueV1 {
                     duration,
                 }
             };
-            let postgap = if let Some(postgap) = &track.postgap {
-                match CueTime::from_vec(postgap) {
-                    Ok(res) => res,
-                    Err(res) => {
-                        return Err(format!(
-                            "postgap in index={} is not parsable: {:?}\n{}",
-                            index, postgap, res
-                        ));
-                    }
-                }
-            } else {
-                match CueTime::from_vec(&vec![0, 0, 0]) {
-                    Ok(res) => res,
-                    Err(_) => {
-                        return Err(String::from("unknown error occured in json2cue"));
-                    }
-                }
-            };
             let start_at = if let Some(start_at) = &track.start_at {
                 match CueTime::from_vec(&start_at) {
                     Ok(res) => res,
@@ -177,7 +159,7 @@ impl Json2CueV1 {
                     }
                 }
             };
-            result.push(CueTrack::new(title, info, pregap, postgap, start_at));
+            result.push(CueTrack::new(title, info, pregap, start_at));
         }
 
         Ok(result)

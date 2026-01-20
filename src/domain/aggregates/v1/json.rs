@@ -23,7 +23,6 @@ pub struct Track {
     pub title: String,
     pub info: Option<Info>,
     pub pregap: Option<Pregap>,
-    pub postgap: Option<Vec<u8>>,
     pub start_at: Option<Vec<u8>>,
 }
 
