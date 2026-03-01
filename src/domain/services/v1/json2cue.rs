@@ -1,3 +1,6 @@
+use std::fs;
+use std::path;
+
 use crate::domain::aggregates::v1::cue::{
     Cue, File as CueFile, FileType as CueFileType, Info as CueInfo, Pregap as CuePregap,
     PregapType as CuePregapType, Time as CueTime, Track as CueTrack,
@@ -5,7 +8,6 @@ use crate::domain::aggregates::v1::cue::{
 use crate::domain::aggregates::v1::json::{
     File as JsonFile, Info as JsonInfo, Json, Track as JsonTrack,
 };
-use std::path;
 
 pub struct Json2CueV1 {
     json: Json,
@@ -72,7 +74,12 @@ impl Json2CueV1 {
             }
             let Ok(abs_file_path_buf) = path::absolute(&file.path) else {
                 return Err(format!("file path({:?}) is not parsable", file.path));
-            }; //file.path.clone();
+            };
+            match fs::exists(&abs_file_path_buf) {
+                Err(d) => return Err(format!("{}", d)),
+                Ok(false) => return Err(format!("file ({:?}) does not exist", file.path)),
+                Ok(true) => (),
+            };
             let Some(abs_file_path) = abs_file_path_buf.to_str() else {
                 return Err(format!("file path({:?}) is not parsable", file.path));
             };
